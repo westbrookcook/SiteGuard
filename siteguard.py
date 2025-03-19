@@ -7,6 +7,7 @@ A simple tool for scanning websites for common security vulnerabilities
 import sys
 import argparse
 from scanner import WebScanner
+from xss_detector import XSSDetector
 
 def main():
     parser = argparse.ArgumentParser(description='SiteGuard - Website Security Scanner')
@@ -31,6 +32,23 @@ def main():
     else:
         print("Target is not accessible")
         sys.exit(1)
+
+    print("\n--- Starting XSS Detection ---")
+    xss_detector = XSSDetector(scanner)
+    forms = xss_detector.find_forms(args.url)
+
+    if forms:
+        print(f"Found {len(forms)} form(s) to test")
+        for i, form in enumerate(forms):
+            print(f"Testing form {i+1}: {form['action']}")
+            xss_vulns = xss_detector.test_xss_in_form(form)
+            if xss_vulns:
+                for vuln in xss_vulns:
+                    print(f"  [!] XSS vulnerability found in {vuln['parameter']}")
+            else:
+                print("  No XSS vulnerabilities found")
+    else:
+        print("No forms found for testing")
 
 if __name__ == '__main__':
     main()
