@@ -9,6 +9,7 @@ import argparse
 import datetime
 from scanner import WebScanner
 from xss_detector import XSSDetector
+from sqli_detector import SQLiDetector
 from reporter import VulnerabilityReporter
 
 def main():
@@ -55,7 +56,25 @@ def main():
             else:
                 print("  No XSS vulnerabilities found")
     else:
-        print("No forms found for testing")
+        print("No forms found for XSS testing")
+
+    print("\n--- Starting SQL Injection Detection ---")
+    sqli_detector = SQLiDetector(scanner)
+    sqli_forms = sqli_detector.find_input_points(args.url)
+
+    if sqli_forms:
+        print(f"Found {len(sqli_forms)} form(s) to test for SQLi")
+        for i, form in enumerate(sqli_forms):
+            print(f"Testing form {i+1} for SQLi: {form['action']}")
+            sqli_vulns = sqli_detector.test_sqli_in_form(form)
+            if sqli_vulns:
+                for vuln in sqli_vulns:
+                    print(f"  [!] SQL Injection found in {vuln['parameter']}")
+                    reporter.add_vulnerability(vuln)
+            else:
+                print("  No SQL injection vulnerabilities found")
+    else:
+        print("No forms found for SQL injection testing")
 
     print("\n--- Scan Complete ---")
     if args.output:
