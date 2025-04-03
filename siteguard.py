@@ -10,6 +10,7 @@ import datetime
 from scanner import WebScanner
 from xss_detector import XSSDetector
 from sqli_detector import SQLiDetector
+from path_detector import PathTraversalDetector
 from reporter import VulnerabilityReporter
 
 def main():
@@ -75,6 +76,27 @@ def main():
                 print("  No SQL injection vulnerabilities found")
     else:
         print("No forms found for SQL injection testing")
+
+    print("\n--- Starting Path Traversal Detection ---")
+    path_detector = PathTraversalDetector(scanner)
+
+    print("Testing directory traversal...")
+    traversal_vulns = path_detector.test_directory_traversal(args.url)
+    if traversal_vulns:
+        for vuln in traversal_vulns:
+            print(f"  [!] Directory traversal found: {vuln['parameter'][0]}")
+            reporter.add_vulnerability(vuln)
+    else:
+        print("  No directory traversal vulnerabilities found")
+
+    print("Testing sensitive file access...")
+    file_vulns = path_detector.test_sensitive_file_access(args.url)
+    if file_vulns:
+        for vuln in file_vulns:
+            print(f"  [!] Sensitive file exposed: {vuln['payload']}")
+            reporter.add_vulnerability(vuln)
+    else:
+        print("  No sensitive files exposed")
 
     print("\n--- Scan Complete ---")
     if args.output:
