@@ -12,19 +12,42 @@ from xss_detector import XSSDetector
 from sqli_detector import SQLiDetector
 from path_detector import PathTraversalDetector
 from reporter import VulnerabilityReporter
+from config import Config
 
 def main():
-    parser = argparse.ArgumentParser(description='SiteGuard - Website Security Scanner')
-    parser.add_argument('url', help='Target URL to scan')
+    parser = argparse.ArgumentParser(
+        description='SiteGuard - Website Security Scanner v0.1',
+        epilog='Example: python siteguard.py http://example.com -o report.txt'
+    )
+    parser.add_argument('url', nargs='?', help='Target URL to scan')
     parser.add_argument('-o', '--output', help='Output file for results')
-    parser.add_argument('-f', '--format', choices=['text', 'json'], default='text', help='Output format')
+    parser.add_argument('-f', '--format', choices=['text', 'json'], default='text',
+                       help='Output format (default: text)')
+    parser.add_argument('-c', '--config', help='Configuration file path')
+    parser.add_argument('--create-config', help='Create sample configuration file')
+    parser.add_argument('-v', '--version', action='version', version='SiteGuard 0.1')
 
     args = parser.parse_args()
+
+    if args.create_config:
+        config = Config()
+        config.create_sample_config(args.create_config)
+        return
+
+    if not args.url:
+        print("Error: URL is required")
+        parser.print_help()
+        sys.exit(1)
+
+    config = Config()
+    if args.config:
+        config.load_from_file(args.config)
 
     print(f"SiteGuard v0.1")
     print(f"Scanning: {args.url}")
 
-    scanner = WebScanner(args.url)
+    timeout = config.get('timeout', 10)
+    scanner = WebScanner(args.url, timeout=timeout)
     reporter = VulnerabilityReporter()
     scan_start = datetime.datetime.now()
     reporter.set_scan_info(args.url, scan_start)
